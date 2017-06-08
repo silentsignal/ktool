@@ -13,10 +13,14 @@ def number_to_str(value):
         h = '0' + h
     return h.decode('hex')
 
+def str_to_number(value):
+    return int(str(value).encode('hex'), 16)
+
 def main():
     parser = ArgumentParser(
         description='Swiss Army Knife for keys and certificates')
     parser.add_argument('--import', dest='do_import', action='store_true')
+    parser.add_argument('--export', dest='do_export', action='store_true')
     parser.add_argument('--search', dest='do_search', action='store_true')
     parser.add_argument('--list', dest='do_list', action='store_true')
     parser.add_argument('--format', dest='format')
@@ -50,6 +54,19 @@ def main():
                 raise SystemExit(1)
             else:
                 raise
+    elif args.do_export:
+        row = db.execute('SELECT e, n FROM rsa_keys WHERE comment = ?', (args.comment,)).fetchone()
+        if row:
+            from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.backends import default_backend
+            e, n = (str_to_number(p) for p in row)
+            pk = RSAPublicNumbers(e, n).public_key(default_backend())
+            print(pk.public_bytes(encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo))
+        else:
+            print('No key with matching comment found', file=stderr)
+            raise SystemExit(1)
     elif args.do_search:
         row = db.execute('SELECT comment FROM rsa_keys WHERE n = ?', (sqlite3.Binary(n),)).fetchone()
         if row:
