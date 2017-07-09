@@ -28,6 +28,8 @@ def main():
     args = parser.parse_args()
     db = sqlite3.connect(path.expanduser('~/.config/ktool.sqlite3'))
     db.execute('CREATE TABLE IF NOT EXISTS rsa_keys (e, n, comment, PRIMARY KEY (e, n))')
+    if args.format:
+        args.format = args.format.lower()
     if args.format == 'rb64':
         e = '\x01\x00\x01' # XXX
         n = stdin.read().decode('base64')
